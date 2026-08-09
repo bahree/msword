@@ -69,11 +69,14 @@ configure_file(
     @ONLY
 )
 
-# MERGEELX writes a fixed hidden-screen payload in addition to the dialog EL
-# tables. Preserve that original payload directly from Microsoft's generator
-# source. The archive lacks the Dialog Editor executable that converted its
-# .des inputs to MERGEELX's intermediate .elx format, so an explicit inert EL
-# table boundary remains until that missing compiler stage is replaced.
+# MERGEELX writes a fixed hidden-screen payload (rgksp/mpstiderc/rgstid/
+# rgrgb) in addition to the dialog EL tables. Preserve that original payload
+# verbatim from Microsoft's generator source, since it does not depend on
+# any .des/.elx input. The archive lacks the Dialog Editor executable that
+# converted its .des inputs to MERGEELX's intermediate .elx format, so the
+# dialog-table section (rgeldi/rgichName/rgchElkNames/mpelkistName) is
+# emitted as a minimal, valid stub until that missing compiler stage is
+# replaced.
 set(OPUS_GENERATED_ELXINFO
     "${CMAKE_CURRENT_BINARY_DIR}/generated/original/elxinfo.h")
 add_custom_command(
