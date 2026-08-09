@@ -55,7 +55,7 @@ jobs:
         working-directory: src
         run: |
           $PSNativeCommandUseErrorActionPreference = $false
-          ctest --test-dir ..\out -C Release --output-on-failure
+          ctest --test-dir ..\out -C Release --output-on-failure --timeout 60
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
 
       - name: Check optional signing configuration
