@@ -57,7 +57,7 @@ jobs:
 
       - name: Test (Release)
         id: tests
-        if: inputs.run_tests != false
+        if: github.event_name != 'workflow_dispatch' || inputs.run_tests
         continue-on-error: true
         shell: pwsh
         working-directory: src
