@@ -47,6 +47,8 @@ extern "C" int FInCa(int doc, long cp, const TestCa* range);
 
 extern "C" void AddDcbToLprgbst(int* offsets, int count, int delta,
                                   int threshold);
+extern "C" void OpusX64TraceRibbon(const char*, int, int, int, int, long, long,
+                                   int) {}
 
 using TestWord = std::uint16_t;
 
