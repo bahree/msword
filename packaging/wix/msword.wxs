@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package
+    Name="$(var.ProductName)"
+    Manufacturer="Microsoft Word x64 Port Project"
+    Version="$(var.ProductVersion)"
+    UpgradeCode="9057B9F8-9CC8-4AF8-9FF8-4A966A2DBF43"
+    Scope="perMachine"
+    Language="1033">
+    <SummaryInformation
+      Description="$(var.ProductName)"
+      Manufacturer="Microsoft Word x64 Port Project" />
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="Microsoft Word x64 Port">
+        <Component Id="cmpWord1Exe" Guid="82B2A459-B8C8-4602-95BA-4CF5AEC7D6C4">
+          <File Id="filWord1Exe" KeyPath="yes" Source="$(var.SourceDir)\WORD1.exe" />
+        </Component>
+      </Directory>
+    </StandardDirectory>
+
+    <Feature Id="MainFeature" Title="$(var.ProductName)" Level="1">
+      <ComponentRef Id="cmpWord1Exe" />
+    </Feature>
+  </Package>
+</Wix>

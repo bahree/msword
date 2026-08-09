@@ -40,6 +40,30 @@ cmake --build --preset x64-release
 & ..\bin\WORD1.exe
 ```
 
+## Windows release artifacts (EXE + MSI)
+
+This repository includes a Windows release workflow at
+`.github/workflows/windows-release.yml` that:
+
+- Configures and builds `x64-release`
+- Runs the full Release test suite (`ctest`)
+- Produces `WORD1-windows-x64.zip` from `bin\*`
+- Produces an MSI installer using WiX (`packaging/wix/msword.wxs`)
+- Uploads both artifacts to the workflow run
+- Publishes both artifacts to GitHub Releases for `v*` tags
+
+To trigger a release build, push a semantic version tag (for example `v0.2.0`).
+The MSI `ProductVersion` is derived from the first `major.minor.patch` numbers
+in the tag.
+
+### Optional artifact signing
+
+If these repository secrets are configured, the workflow signs both `WORD1.exe`
+and the generated MSI before publishing:
+
+- `WINDOWS_CERT_BASE64` (base64-encoded `.pfx`)
+- `WINDOWS_CERT_PASSWORD`
+
 The presets use the Visual Studio 2022 x64 generator. After configuration, the
 generated solution can also be opened directly from
 `out\MicrosoftWordX64Port.sln`; use `WORD1` as the startup project.
