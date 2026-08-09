@@ -9,7 +9,23 @@ The result is the original Word application and user experience running as a
 64-bit Windows executable. This is not an emulator or a reimplementation using
 a modern editor control.
 
+## Download and try it
+
+Prebuilt Windows binaries are published for tagged releases, so you can run the
+port without installing a toolchain:
+
+- Grab `WORD1-windows-x64.zip` (portable) or the `.msi` installer from the
+  [Releases page](https://github.com/bahree/msword/releases).
+- Or download the `windows-release-assets` artifact from a run of the
+  [Windows Release Build workflow](https://github.com/bahree/msword/actions/workflows/windows-release.yml).
+
+See [DOWNLOAD.md](DOWNLOAD.md) for step-by-step instructions, requirements, and
+SmartScreen guidance.
+
 ## Requirements
+
+These are only needed to build from source; skip them if you downloaded a
+release.
 
 - 64-bit Windows
 - Visual Studio 2022 with **Desktop development with C++**
@@ -54,7 +70,7 @@ This repository includes a Windows release workflow at
 
 To trigger a release build, push a semantic version tag (for example `v0.2.0`).
 The MSI `ProductVersion` is derived from the first `major.minor.patch` numbers
-in the tag.
+in the tag. End-user download instructions live in [DOWNLOAD.md](DOWNLOAD.md).
 
 ### Optional artifact signing
 
