@@ -25,7 +25,7 @@ $content = @'
 /*
  * This header is generated at configure time from the literal EL dialog
  * data embedded in the original MERGEELX generator source
- * (OpusEtAl/tools/src/mergeelx.c). See cmake/GenerateElxInfoHeader.ps1.
+ * (OpusEtAl/tools/src/mergeelx.c). See cmake/GenerateElxStid.ps1.
  *
  * MERGEELX normally emits two independently-gated sections:
  *
