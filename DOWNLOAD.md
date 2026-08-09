@@ -50,9 +50,10 @@ as a build artifact, so you can try changes that have not been tagged yet.
 The ZIP and MSI are produced even when the test suite fails, so a run marked
 with a red X can still contain usable artifacts — check whether the failure came
 from the `Build (Release)` step (no artifacts) or only from the tests (artifacts
-present). Release assets are published only when the tests pass. To skip the
-suite entirely for a manual run, set the **Run the Release test suite** input to
-`false` when you click **Run workflow**.
+present). Release assets are published only when the tests actually run and
+pass. To skip the suite entirely for a manual run, set the **Run the Release
+test suite** input to `false` when you click **Run workflow**; skipped tests
+never publish release assets.
 
 Downloading workflow artifacts requires being signed in to GitHub, and artifacts
 expire after the repository's retention period.
