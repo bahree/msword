@@ -42,10 +42,17 @@ as a build artifact, so you can try changes that have not been tagged yet.
 
 1. Open the
    [Windows Release Build workflow](https://github.com/bahree/msword/actions/workflows/windows-release.yml).
-2. Click the most recent successful run (green check mark).
+2. Click the most recent run.
 3. Scroll to **Artifacts** and download `windows-release-assets`.
 4. Unzip it to get `WORD1-windows-x64.zip` and the MSI, then follow the steps
    above.
+
+The ZIP and MSI are produced even when the test suite fails, so a run marked
+with a red X can still contain usable artifacts — check whether the failure came
+from the `Build (Release)` step (no artifacts) or only from the tests (artifacts
+present). Release assets are published only when the tests pass. To skip the
+suite entirely for a manual run, set the **Run the Release test suite** input to
+`false` when you click **Run workflow**.
 
 Downloading workflow artifacts requires being signed in to GitHub, and artifacts
 expire after the repository's retention period.
@@ -62,8 +69,10 @@ git push origin v0.2.0
 The workflow configures and builds `x64-release`, runs the Release test suite,
 packages `bin\*` into the ZIP, builds the MSI from `packaging/wix/msword.wxs`,
 optionally signs both artifacts, and attaches them to the GitHub Release for the
-tag. The MSI `ProductVersion` comes from the first `major.minor.patch` numbers
-in the tag. You can also start the workflow manually with **Run workflow**
+tag. Assets are attached only if the tests pass; if they fail, the run is marked
+failed but the ZIP and MSI are still uploaded as run artifacts. The MSI
+`ProductVersion` comes from the first `major.minor.patch` numbers in the tag.
+You can also start the workflow manually with **Run workflow**
 (`workflow_dispatch`) to produce artifacts without creating a release.
 
 ## Building it yourself instead

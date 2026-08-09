@@ -65,8 +65,8 @@ This repository includes a Windows release workflow at
 - Runs the full Release test suite (`ctest`)
 - Produces `WORD1-windows-x64.zip` from `bin\*`
 - Produces an MSI installer using WiX (`packaging/wix/msword.wxs`)
-- Uploads both artifacts to the workflow run
-- Publishes both artifacts to GitHub Releases for `v*` tags
+- Uploads both artifacts to the workflow run, even if tests fail
+- Publishes both artifacts to GitHub Releases for `v*` tags when tests pass
 
 To trigger a release build, push a semantic version tag (for example `v0.2.0`).
 The MSI `ProductVersion` is derived from the first `major.minor.patch` numbers
