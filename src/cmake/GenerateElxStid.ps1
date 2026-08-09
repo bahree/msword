@@ -6,9 +6,12 @@ param(
     [string]$OutputPath
 )
 
-if (-not (Test-Path -LiteralPath $InputPath)) {
+if (-not (Test-Path -LiteralPath $InputPath -PathType Leaf)) {
     throw "InputPath does not exist: $InputPath"
 }
+# Keep an explicit read dependency on MERGEELX source so CI fails fast if the
+# checked-in generator source becomes unreadable.
+$null = Get-Content -LiteralPath $InputPath -TotalCount 1
 
 $outputDirectory = Split-Path -Parent $OutputPath
 if ($outputDirectory) {
@@ -25,4 +28,5 @@ $content = @"
  */
 "@
 
-Set-Content -LiteralPath $OutputPath -Value $content -NoNewline -Encoding utf8
+$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+[System.IO.File]::WriteAllText($OutputPath, $content, $utf8NoBom)
