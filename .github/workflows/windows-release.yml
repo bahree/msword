@@ -1,0 +1,120 @@
+name: Windows Release Build
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: windows-2022
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Determine product version
+        id: meta
+        shell: pwsh
+        run: |
+          $version = "0.2.0"
+          if ($env:GITHUB_REF -like "refs/tags/*") {
+            $tag = $env:GITHUB_REF.Substring(10)
+            if ($tag.StartsWith("v")) {
+              $tag = $tag.Substring(1)
+            }
+            if ($tag -match '^(\d+)\.(\d+)\.(\d+)') {
+              $version = "$($Matches[1]).$($Matches[2]).$($Matches[3])"
+            }
+          }
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "msi_name=WORD1-windows-x64-$version.msi" >> $env:GITHUB_OUTPUT
+          "zip_name=WORD1-windows-x64.zip" >> $env:GITHUB_OUTPUT
+
+      - name: Configure (Release)
+        shell: pwsh
+        working-directory: src
+        run: cmake --preset x64-release
+
+      - name: Build (Release)
+        shell: pwsh
+        working-directory: src
+        run: cmake --build --preset x64-release
+
+      - name: Test (Release)
+        shell: pwsh
+        working-directory: src
+        run: ctest --test-dir ..\out -C Release --output-on-failure
+
+      - name: Check optional signing configuration
+        id: signing
+        shell: pwsh
+        run: |
+          if ("${{ secrets.WINDOWS_CERT_BASE64 }}" -and "${{ secrets.WINDOWS_CERT_PASSWORD }}") {
+            "enabled=true" >> $env:GITHUB_OUTPUT
+          } else {
+            "enabled=false" >> $env:GITHUB_OUTPUT
+          }
+
+      - name: Import signing certificate
+        if: steps.signing.outputs.enabled == 'true'
+        shell: pwsh
+        run: |
+          $certPath = Join-Path $env:RUNNER_TEMP "codesign.pfx"
+          [IO.File]::WriteAllBytes($certPath, [Convert]::FromBase64String("${{ secrets.WINDOWS_CERT_BASE64 }}"))
+          "cert_path=$certPath" >> $env:GITHUB_OUTPUT
+        id: cert
+
+      - name: Sign WORD1.exe
+        if: steps.signing.outputs.enabled == 'true'
+        shell: pwsh
+        run: |
+          signtool sign /fd SHA256 /td SHA256 /tr http://timestamp.digicert.com /f "${{ steps.cert.outputs.cert_path }}" /p "${{ secrets.WINDOWS_CERT_PASSWORD }}" "$env:GITHUB_WORKSPACE\bin\WORD1.exe"
+
+      - name: Create EXE release bundle
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path "$env:GITHUB_WORKSPACE\artifacts" -Force | Out-Null
+          Compress-Archive -Path "$env:GITHUB_WORKSPACE\bin\*" -DestinationPath "$env:GITHUB_WORKSPACE\artifacts\${{ steps.meta.outputs.zip_name }}" -Force
+
+      - name: Install WiX
+        shell: pwsh
+        run: |
+          dotnet tool install --global wix
+          "$env:USERPROFILE\.dotnet\tools" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Build MSI
+        shell: pwsh
+        run: |
+          wix build "$env:GITHUB_WORKSPACE\packaging\wix\msword.wxs" `
+            -arch x64 `
+            -d SourceDir="$env:GITHUB_WORKSPACE\bin" `
+            -d ProductName="Microsoft Word for Windows 1.1a (x64 Port)" `
+            -d ProductVersion="${{ steps.meta.outputs.version }}" `
+            -o "$env:GITHUB_WORKSPACE\artifacts\${{ steps.meta.outputs.msi_name }}"
+
+      - name: Sign MSI
+        if: steps.signing.outputs.enabled == 'true'
+        shell: pwsh
+        run: |
+          signtool sign /fd SHA256 /td SHA256 /tr http://timestamp.digicert.com /f "${{ steps.cert.outputs.cert_path }}" /p "${{ secrets.WINDOWS_CERT_PASSWORD }}" "$env:GITHUB_WORKSPACE\artifacts\${{ steps.meta.outputs.msi_name }}"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release-assets
+          path: |
+            artifacts/${{ steps.meta.outputs.zip_name }}
+            artifacts/${{ steps.meta.outputs.msi_name }}
+          if-no-files-found: error
+
+      - name: Publish GitHub Release assets
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/${{ steps.meta.outputs.zip_name }}
+            artifacts/${{ steps.meta.outputs.msi_name }}
