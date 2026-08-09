@@ -9,7 +9,23 @@ The result is the original Word application and user experience running as a
 64-bit Windows executable. This is not an emulator or a reimplementation using
 a modern editor control.
 
+## Download and try it
+
+Prebuilt Windows binaries are published for tagged releases, so you can run the
+port without installing a toolchain:
+
+- Grab `WORD1-windows-x64.zip` (portable) or the `.msi` installer from the
+  [Releases page](https://github.com/bahree/msword/releases).
+- Or download the `windows-release-assets` artifact from a run of the
+  [Windows Release Build workflow](https://github.com/bahree/msword/actions/workflows/windows-release.yml).
+
+See [DOWNLOAD.md](DOWNLOAD.md) for step-by-step instructions, requirements, and
+SmartScreen guidance.
+
 ## Requirements
+
+These are only needed to build from source; skip them if you downloaded a
+release.
 
 - 64-bit Windows
 - Visual Studio 2022 with **Desktop development with C++**
@@ -46,15 +62,16 @@ This repository includes a Windows release workflow at
 `.github/workflows/windows-release.yml` that:
 
 - Configures and builds `x64-release`
-- Runs the full Release test suite (`ctest`)
+- Runs the Release test suite (`ctest`), excluding the `interactive` UI tests
+  unless the `run_interactive_tests` input is enabled
 - Produces `WORD1-windows-x64.zip` from `bin\*`
 - Produces an MSI installer using WiX (`packaging/wix/msword.wxs`)
-- Uploads both artifacts to the workflow run
-- Publishes both artifacts to GitHub Releases for `v*` tags
+- Uploads both artifacts to the workflow run, even if tests fail
+- Publishes both artifacts to GitHub Releases for `v*` tags when tests pass
 
 To trigger a release build, push a semantic version tag (for example `v0.2.0`).
 The MSI `ProductVersion` is derived from the first `major.minor.patch` numbers
-in the tag.
+in the tag. End-user download instructions live in [DOWNLOAD.md](DOWNLOAD.md).
 
 ### Optional artifact signing
 
@@ -86,6 +103,34 @@ For a release build, replace `Debug` with `Release`. The suite covers the
 ported x64 runtime, original Word data structures and command tables, process
 startup, and automated UI workflows including typing, selection, formatting,
 dialogs, and saving.
+
+### Interactive UI tests
+
+Some UI scenarios drive the real desktop: they synthesise keyboard and mouse
+input, activate windows, and read back pixels from the document pane. They are
+reliable only in an interactive logon session, so they carry the CTest label
+`interactive` and are skipped by the release workflow:
+
+| Test | Scenario |
+| --- | --- |
+| `opus_word1_interaction_test` | Menu navigation plus physical keyboard typing |
+| `opus_word1_font_typing_test` | Mixed-font lines and pane resizing |
+| `opus_word1_save_as_test` | File Save As dialog lifecycle |
+
+Run everything except them the way CI does:
+
+```powershell
+ctest --test-dir .\out -C Release --output-on-failure -LE interactive
+```
+
+Run only them, on an interactive desktop:
+
+```powershell
+ctest --test-dir .\out -C Release --output-on-failure -L interactive
+```
+
+Dispatching the release workflow with `run_interactive_tests` enabled includes
+them in CI as well.
 
 ## Project layout
 
