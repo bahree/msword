@@ -931,6 +931,9 @@ target_compile_definitions(opus_x64_runtime_test PRIVATE
 )
 target_include_directories(opus_x64_runtime_test PRIVATE ${OPUS_ORIGINAL_INCLUDE_DIRS})
 target_link_libraries(opus_x64_runtime_test PRIVATE opus_x64_runtime user32 gdi32)
+if(MSVC)
+    target_compile_options(opus_x64_runtime_test PRIVATE /J /W3 /wd4005)
+endif()
 set_target_properties(opus_x64_runtime_test PROPERTIES
     FOLDER "Original Opus x64/tests"
     RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/tests"
