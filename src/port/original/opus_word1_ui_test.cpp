@@ -224,6 +224,39 @@ std::size_t count_dark_client_pixels(const HWND window,
     return dark;
 }
 
+/* A single BitBlt can be taken while the target thread still has a WM_PAINT
+   queued for the pane, in which case the capture reads back the erased client
+   area instead of the painted document.  Flush any pending paint and sample
+   repeatedly, keeping the largest count, so that a transient blank frame
+   cannot be mistaken for a document that was never painted. */
+std::size_t count_settled_dark_client_pixels(const HWND window,
+                                             const int y_first = 0,
+                                             const int y_limit = 120,
+                                             const DWORD timeout_ms = 400) {
+    const ULONGLONG deadline = GetTickCount64() + timeout_ms;
+    std::size_t best = 0;
+    std::size_t previous = 0;
+    bool have_previous = false;
+    for (;;) {
+        if (window != nullptr && !IsHungAppWindow(window)) {
+            UpdateWindow(window);
+        }
+        const std::size_t sample =
+            count_dark_client_pixels(window, y_first, y_limit);
+        best = (std::max)(best, sample);
+        if (have_previous && sample != 0 && sample == previous) {
+            break;
+        }
+        previous = sample;
+        have_previous = true;
+        if (GetTickCount64() >= deadline) {
+            break;
+        }
+        Sleep(50);
+    }
+    return best;
+}
+
 int longest_light_gap(const HWND window, const int x_first, const int x_limit,
                       const int y) {
     const HDC dc = GetDC(window);
@@ -649,12 +682,42 @@ int wmain(const int argument_count, wchar_t** arguments) {
             return fail(process, 71,
                         "File Save As dialog did not finish initializing");
         }
-        if (!PostMessageW(save_as_dialog, kWmCommand, 2, 0) ||
-            !wait_for_window_to_close(process.hProcess, process.dwProcessId,
-                                      L"OpusSdmDialog", 5000) ||
-            !window_is_responsive(process.hProcess, main_window)) {
+        if (!PostMessageW(save_as_dialog, kWmCommand, 2, 0)) {
+            std::cerr << "Save As cancel post failed: " << GetLastError()
+                      << " stage="
+                      << reinterpret_cast<INT_PTR>(GetPropA(
+                             main_window, "OpusX64SaveAsStage"))
+                      << '\n';
             return fail(process, 72,
-                        "File Save As dialog did not cancel cleanly");
+                        "File Save As cancel command could not be posted");
+        }
+        if (!wait_for_window_to_close(process.hProcess, process.dwProcessId,
+                                      L"OpusSdmDialog", 5000)) {
+            std::cerr << "Save As dialog still open: dialogWindow="
+                      << IsWindow(save_as_dialog) << " dialogResponsive="
+                      << window_is_responsive(process.hProcess, save_as_dialog)
+                      << " stage="
+                      << reinterpret_cast<INT_PTR>(GetPropA(
+                             main_window, "OpusX64SaveAsStage"))
+                      << '\n';
+            log_process_windows(process.dwProcessId);
+            return fail(process, 78,
+                        "File Save As dialog did not close after Cancel");
+        }
+        if (!window_is_responsive(process.hProcess, main_window)) {
+            DWORD exit_code = 0;
+            GetExitCodeProcess(process.hProcess, &exit_code);
+            std::cerr << "Save As teardown left the main window unresponsive:"
+                      << " processExit=0x" << std::hex << exit_code << std::dec
+                      << " mainWindow=" << IsWindow(main_window)
+                      << " hung=" << IsHungAppWindow(main_window)
+                      << " stage="
+                      << reinterpret_cast<INT_PTR>(GetPropA(
+                             main_window, "OpusX64SaveAsStage"))
+                      << '\n';
+            log_process_windows(process.dwProcessId);
+            return fail(process, 79,
+                        "WORD1 did not recover after cancelling File Save As");
         }
         TerminateProcess(process.hProcess, 0);
         WaitForSingleObject(process.hProcess, 2000);
@@ -944,11 +1007,11 @@ int wmain(const int argument_count, wchar_t** arguments) {
         }
         Sleep(400);
         const std::size_t after_enter_pixels =
-            count_dark_client_pixels(pane, 0, 300);
+            count_settled_dark_client_pixels(pane, 0, 300);
         const std::size_t after_enter_first_band =
-            count_dark_client_pixels(pane, 0, 50);
+            count_settled_dark_client_pixels(pane, 0, 50);
         const std::size_t after_enter_second_band =
-            count_dark_client_pixels(pane, 50, 131);
+            count_settled_dark_client_pixels(pane, 50, 131);
         InvalidateRect(pane, nullptr, TRUE);
         UpdateWindow(pane);
         Sleep(400);
@@ -1622,7 +1685,8 @@ int wmain(const int argument_count, wchar_t** arguments) {
                       << "]";
         }
         std::cerr << '\n';
-        const std::size_t dark_pixels_after = count_dark_client_pixels(pane);
+        const std::size_t dark_pixels_after =
+            count_settled_dark_client_pixels(pane);
         LRESULT expected_cp_after_typing =
             cp_before_typing + static_cast<LRESULT>(physical_text.size());
         for (const wchar_t character : physical_text) {

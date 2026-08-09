@@ -1012,3 +1012,13 @@ add_test(NAME opus_word1_save_as_test
     COMMAND $<TARGET_FILE:opus_word1_ui_test> $<TARGET_FILE:WORD1> --save-as
 )
 set_tests_properties(opus_word1_save_as_test PROPERTIES TIMEOUT 20)
+
+# These scenarios drive the real desktop (synthetic input, window activation and
+# pixel readback of the document pane).  They are reliable on an interactive
+# session but not on the headless desktop used by hosted CI agents, so they are
+# labelled and can be excluded there with `ctest -LE interactive`.
+set_tests_properties(
+    opus_word1_interaction_test
+    opus_word1_font_typing_test
+    opus_word1_save_as_test
+    PROPERTIES LABELS "interactive")

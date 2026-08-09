@@ -10,6 +10,12 @@ on:
         description: "Run the Release test suite"
         type: boolean
         default: true
+      run_interactive_tests:
+        description: >-
+          Also run the UI tests labelled 'interactive'. These drive the real
+          desktop and are unreliable on hosted runners.
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -61,9 +67,21 @@ jobs:
         continue-on-error: true
         shell: pwsh
         working-directory: src
+        env:
+          RUN_INTERACTIVE_TESTS: ${{ inputs.run_interactive_tests }}
         run: |
           $PSNativeCommandUseErrorActionPreference = $false
-          ctest --test-dir ..\out -C Release --output-on-failure --timeout 60
+          $arguments = @(
+            "--test-dir", "..\out", "-C", "Release", "--output-on-failure",
+            "--timeout", "60"
+          )
+          if ($env:RUN_INTERACTIVE_TESTS -ne "true") {
+            # The 'interactive' scenarios need a real desktop for synthetic
+            # input and pixel readback, which hosted runners do not provide.
+            Write-Host "Excluding tests labelled 'interactive'."
+            $arguments += @("-LE", "interactive")
+          }
+          ctest @arguments
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
 
       - name: Check optional signing configuration
