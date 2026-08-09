@@ -244,6 +244,10 @@ std::size_t count_settled_dark_client_pixels(const HWND window,
         const std::size_t sample =
             count_dark_client_pixels(window, y_first, y_limit);
         best = (std::max)(best, sample);
+        /* A run of identical non-zero samples means the pane has settled, so
+           stop early.  Repeated zero samples deliberately keep polling: a
+           blank capture is exactly the transient state this wrapper exists to
+           outlast, so it must never end the loop before the deadline. */
         if (have_previous && sample != 0 && sample == previous) {
             break;
         }
