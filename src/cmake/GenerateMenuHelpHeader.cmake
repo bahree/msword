@@ -52,7 +52,7 @@ foreach(menuhelp_text IN LISTS menuhelp_strings)
     string(APPEND content "    \"${menuhelp_text}\",\n")
 endforeach()
 string(APPEND content "};\n")
-string(APPEND content "#define OPUS_X64_MENU_HELP_STRING(iidstr) (((unsigned int)(iidstr) < (unsigned int)(sizeof(rgszOpusX64MenuHelp) / sizeof(rgszOpusX64MenuHelp[0]))) ? (char *)rgszOpusX64MenuHelp[(iidstr)] : \"\")\n")
+string(APPEND content "#define OPUS_X64_MENU_HELP_STRING(iidstr) (((unsigned int)(iidstr) < (unsigned int)(sizeof(rgszOpusX64MenuHelp) / sizeof(rgszOpusX64MenuHelp[0]))) ? (char *)rgszOpusX64MenuHelp[(unsigned int)(iidstr)] : \"\")\n")
 string(APPEND content "#endif\n")
 
 set(should_write TRUE)
