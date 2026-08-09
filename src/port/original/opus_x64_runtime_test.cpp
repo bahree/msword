@@ -338,7 +338,9 @@ int main() {
         EndSdm();
         return 23;
     }
-    TestDltHeader modal_template{{8, 24, 206, 104}, 3, 0x8400,
+    // hidAbout=44; hidOpen=3 and hidSaveAs=4 are routed to the Windows common
+    // file dialogs, which would block this test on a real modal file picker.
+    TestDltHeader modal_template{{8, 24, 206, 104}, 44, 0x8400,
                                   reinterpret_cast<void*>(ModalRuntimeProbe),
                                   11, 4};
     auto* modal_template_pointer = &modal_template;
