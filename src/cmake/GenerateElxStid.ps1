@@ -35,9 +35,12 @@ $content = @'
  *     the checked-in .des sources to build MERGEELX's intermediate .elx
  *     files; that executable is not part of the archive. Until that
  *     missing compiler stage is replaced, this section is emitted as a
- *     minimal, valid stub (a single empty ELDI entry) so translation
- *     units that include elxdefs.h before this header -- and therefore
- *     define elkAppMac -- still compile and link.
+ *     minimal stub so translation units that include elxdefs.h before
+ *     this header -- and therefore define elkAppMac -- still compile and
+ *     link. rgeldi is a pointer to a zeroed byte buffer (MSVC C2233
+ *     forbids arrays of structs that contain flexible array members, and
+ *     ELDI contains "ELFD rgelfd[]"); celfd==0 ensures rgelfd is never
+ *     indexed at run-time.
  *
  *   - The "#ifdef STID" section is a fixed, self-contained hidden-screen
  *     payload (rgksp/mpstiderc/rgstid/rgrgb) that MERGEELX writes
@@ -46,11 +49,13 @@ $content = @'
  */
 
 #ifdef elkAppMac
-/* Minimal stub: no compiled dialog tables are available (see note above). */
-csconst ELDI rgeldi[] =
-	{
-	{ 0, 0, 0 }
-	};
+/* Minimal stub: no compiled dialog tables are available (see note above).
+ * MSVC C2233 forbids arrays of structs with flexible array members (ELDI
+ * contains "ELFD rgelfd[]"), so "csconst ELDI rgeldi[] = {…}" is illegal.
+ * Use a zeroed byte buffer of one ELDI's fixed-part size instead; celfd==0
+ * on the entry ensures rgelfd is never indexed at run-time. */
+static char _rgeldi_stub_bytes[sizeof(ELDI)] = {0};
+csconst ELDI * const rgeldi = (csconst ELDI *)_rgeldi_stub_bytes;
 
 csconst unsigned rgichName[] = { 0 };
 csconst unsigned char rgchElkNames[] = { 0 };
